@@ -1,4 +1,5 @@
 use std::fs;
+use std::{thread, time};
 
 fn load_game(romPath: &str) -> Vec<u8> {
 
@@ -14,16 +15,17 @@ fn get_opcode(memory: &Vec<u8>, idx: usize) -> u16 {
 
 pub mod cpu;
 pub mod opcodes;
+pub mod graphic;
 
 fn main() {
-    let game = cpu::init_cpu();
-    let game = load_game("maze.rom");
-    let opcodes= opcodes::initialise_opcodes();
-    let mut idx = 0;
-    while idx < game.len() {
-        let opcode = get_opcode(&game, idx);
-        let res = opcodes::find_opcode_id(&opcodes, &opcode);
-        println!("OpCode found !{:4x?}", opcode);
-        idx += 2;
+    let mut cpu = cpu::init_cpu();
+    cpu.memory = load_game("maze.rom");
+    let opcodes = opcodes::initialise_opcodes();
+
+    while true {
+        let opcode = get_opcode(&cpu.memory, usize::from(cpu.pc));
+        opcodes::execute_op_code(&mut cpu, &opcodes, &opcode);
+        cpu.pc += 2;
+        thread::sleep(time::Duration::from_millis(500));
     }
 }

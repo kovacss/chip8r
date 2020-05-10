@@ -306,11 +306,20 @@ pub fn find_opcode_id<'a>(opcodes: &'a Vec<OpCodeLookup>, opcode: &u16) -> Optio
 
 pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>, opcode: &u16) {
     let parse_result = parse_opcode(op_codes, opcode);
+    
     if parse_result.is_none() {
         return;
     }
-    let (opcode, variables) = parse_result.unwrap();
-    match opcode {
+
+    let (instruction, variables) = parse_result.unwrap();
+    println!("Executing Instruction {:?} from opcode - {:4x?}", instruction, opcode);
+    println!("Variables:");
+    println!("\t - addr: {}", variables.addr);
+    println!("\t - kk: {}", variables.kk);
+    println!("\t - nibble: {}", variables.nibble);
+    println!("\t - x: {}", variables.x);
+    println!("\t - y: {}", variables.y);
+    match instruction {
         OpCode::JP_ADDR => {
             cpu.pc = variables.addr;
         },
@@ -415,6 +424,9 @@ pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>, opcode: &u16
         OpCode::RND_VX_BYTE => {
             cpu.registers[usize::from(variables.x)] = 132 & variables.kk;
         },
+        OpCode::DRW => {
+            
+        }
         // TODO DRW Vx, Vy, nibble
 
         // TODO SKP_VX and SKNP_VX
@@ -430,7 +442,7 @@ pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>, opcode: &u16
         //         cpu.pc += 2;
         //     }
         // },
-        _ => {}
+        _ => { println!("Instruction {:?} no implemented", instruction); }
     };
 }
 
