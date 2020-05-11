@@ -1,4 +1,5 @@
 use crate::cpu::CPU;
+use crate::graphic;
 
 #[derive(Debug)]
 #[derive(PartialEq)]
@@ -290,12 +291,6 @@ pub fn initialise_opcodes() -> Vec<OpCodeLookup> {
 }
 
 pub fn find_opcode_id<'a>(opcodes: &'a Vec<OpCodeLookup>, opcode: &u16) -> Option<&'a OpCode> {
-    // let op: Vec<&OpCodeLookup> = opcodes
-    // .into_iter()
-    // .filter(|opcode_def| opcode & opcode_def.mask == opcode_def.id)
-    // .collect();
-
-    // Some(&op[0].op_code)
     for opcode_def in opcodes.iter() {
         if opcode & opcode_def.mask == opcode_def.id {
             return Some(&opcode_def.op_code);
@@ -304,29 +299,40 @@ pub fn find_opcode_id<'a>(opcodes: &'a Vec<OpCodeLookup>, opcode: &u16) -> Optio
     None
 }
 
-pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>, opcode: &u16) {
-    let parse_result = parse_opcode(op_codes, opcode);
+pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>) {
+    let opcode = cpu.get_next_opcode();
+    let parse_result = parse_opcode(op_codes, &opcode);
     
     if parse_result.is_none() {
         return;
     }
 
     let (instruction, variables) = parse_result.unwrap();
-    println!("Executing Instruction {:?} from opcode - {:4x?}", instruction, opcode);
-    println!("Variables:");
-    println!("\t - addr: {}", variables.addr);
-    println!("\t - kk: {}", variables.kk);
-    println!("\t - nibble: {}", variables.nibble);
-    println!("\t - x: {}", variables.x);
-    println!("\t - y: {}", variables.y);
+
+    // print!("Executing Instruction {:?} from opcode -{:4x?}", instruction, opcode);
+    // print!("\t - addr: {:?}", variables.addr);
+    // print!("\t - kk: {:?}", variables.kk);
+    // print!("\t - nibble: {:?}", variables.nibble);
+    // print!("\t - x: {:?}", variables.x);
+    // println!("\t - y: {:?}", variables.y);
     match instruction {
+        OpCode::RET => {
+           cpu.pc = cpu.stack[0];
+           cpu.pc -= 2;
+           cpu.sp -= 1;
+           println!("RET {} - SP {}", cpu.pc, cpu.sp);
+        },
         OpCode::JP_ADDR => {
             cpu.pc = variables.addr;
+            cpu.pc -= 2;
         },
         OpCode::CALL_ADDR => {
             cpu.sp += 1;
+            cpu.stack.push_front(cpu.pc);
             // TODO puts the current PC on the top of the stack
             cpu.pc = variables.addr;
+            println!("STACK {} - SP {}", cpu.stack[0], cpu.sp);
+            cpu.pc -= 2;
         },
         OpCode::SE_VX_BYTE => {
             let reg_value = cpu.registers[usize::from(variables.x)];
@@ -341,9 +347,9 @@ pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>, opcode: &u16
             }
         },
         OpCode::SE_VX_VY => {
-            let reg_value_a = cpu.registers[usize::from(variables.x)];
-            let reg_value_b = cpu.registers[usize::from(variables.y)];
-            if reg_value_a == reg_value_b {
+            let reg_value_x = cpu.registers[usize::from(variables.x)];
+            let reg_value_y = cpu.registers[usize::from(variables.y)];
+            if reg_value_x == reg_value_y {
                 cpu.pc += 2;
             }
         },
@@ -413,6 +419,7 @@ pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>, opcode: &u16
             let reg_value_b = cpu.registers[usize::from(variables.y)];
             if reg_value_a != reg_value_b {
                 cpu.pc += 2;
+                cpu.pc -= 2;
             }
         },
         OpCode::LD_I_ADDR => {
@@ -420,29 +427,53 @@ pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>, opcode: &u16
         },
         OpCode::JP_V0_ADDR => {
             cpu.pc = cpu.registers[0] + variables.addr;
+            cpu.pc -= 2;
         },
         OpCode::RND_VX_BYTE => {
-            cpu.registers[usize::from(variables.x)] = 132 & variables.kk;
+            use rand::prelude::*;
+            cpu.registers[usize::from(variables.x)] = (random::<u8>() & 0x00ff) as  u16 & variables.kk;
         },
         OpCode::DRW => {
-            
+            let start_x = cpu.registers[usize::from(variables.x)];
+            let start_y = cpu.registers[usize::from(variables.y)];
+            let collision = graphic::display_graphic(start_x, start_y, variables.nibble.into(), cpu.i, &cpu.memory, &mut cpu.screen);
+            cpu.registers[15] = if collision {
+                1
+            } else {
+                0
+            };
         }
-        // TODO DRW Vx, Vy, nibble
-
-        // TODO SKP_VX and SKNP_VX
-        // OpCode::SKP_VX => {
-        //     let key = 0; // TODO set Key
-        //     if key == cpu.registers[usize::from(variables.x)] {
-        //         cpu.pc += 2;
-        //     }
-        // },
-        // OpCode::SKNP_VX => {
-        //     let key = 0; // TODO set Key
-        //     if key == cpu.registers[usize::from(variables.x)] {
-        //         cpu.pc += 2;
-        //     }
-        // },
-        _ => { println!("Instruction {:?} no implemented", instruction); }
+        // TODO Key handling
+        OpCode::SKP_VX => {
+            // let key = 0; // TODO set Key
+            // if key == cpu.registers[usize::from(variables.x)] {
+                // cpu.pc += 2;
+            // }
+            cpu.pc -= 4;
+        },
+        // TODO Key handling
+        OpCode::SKNP_VX => {
+            // let key = 0; // TODO set Key
+            // if key == cpu.registers[usize::from(variables.x)] {
+                // cpu.pc += 2;
+            // }
+            cpu.pc -= 2
+        },
+        // TODO Key handling
+        OpCode::LD_VX_K => {
+            // let key = 0; // TODO set Key
+            // if key == cpu.registers[usize::from(variables.x)] {
+                // cpu.pc += 2;
+            // }
+            cpu.pc -= 2
+        },
+        OpCode::ADD_I_VX => {
+            cpu.i = cpu.i + cpu.registers[usize::from(variables.x)];
+        },
+        _ => {
+            println!("Instruction {:?} no implemented", instruction);
+            panic!();
+         }
     };
 }
 

@@ -1,7 +1,7 @@
 use crate::cpu::CPU;
 
-const WIDTH: u16 = 64;
-const HEIGHT: u16 = 32;
+pub const WIDTH: u16 = 64;
+pub const HEIGHT: u16 = 32;
 
 const Sprites: &[u8] = &[
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -22,13 +22,17 @@ const Sprites: &[u8] = &[
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 ];
 
+pub fn get_sprites() -> &'static [u8]  {
+    Sprites
+}
 
 pub fn display_graphic(start_x: u16, start_y: u16, bytes_to_read: u16, base_address: u16, memory: &Vec<u8>, screen: &mut Vec<bool>) -> bool{
     let mut collision = false;
 
-    for idx in base_address..bytes_to_read {
-        let sprite = memory[usize::from(idx)];
-        let y = start_y + (idx - base_address);
+    println!("setting pixel x {} - y {} - bytes_to_read: {} - base_address: {}", start_x, start_y, bytes_to_read, base_address);
+    for idx in 0..bytes_to_read {
+        let sprite = memory[usize::from(base_address + idx)];
+        let y = start_y + idx;
 
         for sprite_idx in 0..8 {
             let x = start_x + sprite_idx;
@@ -36,6 +40,7 @@ pub fn display_graphic(start_x: u16, start_y: u16, bytes_to_read: u16, base_addr
 
             let bit = sprite >> (7 - sprite_idx) & 1;
             let existing_pixel = screen[usize::from(pixel_coordinate)];
+            // println!("setting pixel x {} - y {} - cordinate {}  - previous_color: {} - new_color: {}", x, y, pixel_coordinate, existing_pixel, bit == 1);
             if (bit == 1) != existing_pixel {
                 screen[usize::from(pixel_coordinate)] = bit == 1;
                 if bit == 1 {
@@ -65,12 +70,6 @@ mod tests {
     }
 
     fn screen_init() -> Vec<bool> {
-        let mut screen: Vec<bool> = vec![false; usize::from(WIDTH * HEIGHT)];
-        for x in 0..WIDTH {
-            for y in 0..HEIGHT {
-                screen[usize::from(x + y * WIDTH)] = false;
-            }
-        }
-        screen
+        vec![false; usize::from(WIDTH * HEIGHT)]
     }
 }
