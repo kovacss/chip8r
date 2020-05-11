@@ -36,4 +36,12 @@ impl CPU {
         let op_code =  ((self.memory[idx] as u16) << 8) | self.memory[idx + 1] as u16;
         op_code
     }
+
+    pub fn get_register_value(&self, reg_number: u8) -> u16 {
+        self.registers[usize::from(reg_number)]
+    }
+
+    pub fn set_regF(&mut self, value: u16) {
+        self.registers[0xF] = value;
+    }
 }

@@ -32,12 +32,11 @@ fn main() {
 
     while true {
         // let opcode = get_opcode(&cpu.memory, usize::from(cpu.pc));
-        opcodes::execute_op_code(&mut cpu, &opcodes);
+        let update_screen = opcodes::execute_op_code(&mut cpu, &opcodes);
 
         cpu.pc += 2;
         
-        // println!("-----END-----");
-        // if (opcode & 0xF000) == 0xD000 {
+        if update_screen {
             println!("----------------------------------------------------------------");
             for y in 0..graphic::HEIGHT {
                 for x in 0..graphic::WIDTH {
@@ -51,8 +50,6 @@ fn main() {
                 println!();
             }
             println!("----------------------------------------------------------------");
-            // thread::sleep(time::Duration::from_millis(1400));
-        // }
- 
+        }
     }
 }

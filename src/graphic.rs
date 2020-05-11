@@ -3,7 +3,7 @@ use crate::cpu::CPU;
 pub const WIDTH: u16 = 64;
 pub const HEIGHT: u16 = 32;
 
-const Sprites: &[u8] = &[
+const SPRITES: &[u8] = &[
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
     0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
@@ -23,10 +23,10 @@ const Sprites: &[u8] = &[
 ];
 
 pub fn get_sprites() -> &'static [u8]  {
-    Sprites
+    SPRITES
 }
 
-pub fn display_graphic(start_x: u16, start_y: u16, bytes_to_read: u16, base_address: u16, memory: &Vec<u8>, screen: &mut Vec<bool>) -> bool{
+pub fn update_screen(start_x: u16, start_y: u16, bytes_to_read: u16, base_address: u16, memory: &Vec<u8>, screen: &mut Vec<bool>) -> bool{
     let mut collision = false;
 
     println!("setting pixel x {} - y {} - bytes_to_read: {} - base_address: {}", start_x, start_y, bytes_to_read, base_address);
@@ -52,18 +52,19 @@ pub fn display_graphic(start_x: u16, start_y: u16, bytes_to_read: u16, base_addr
     collision
 }
 
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn display_graphic_test() {
-        let memory = Sprites.clone();
+        let memory = SPRITES.clone();
         let mut screen = screen_init();
 
         let (x, y) = (0, 0);
         let base_address = 0;
-        let collision = display_graphic(x, y, 2, base_address, &memory.to_vec(), &mut screen);
+        let collision = update_screen(x, y, 2, base_address, &memory.to_vec(), &mut screen);
 
         println!("screen values {:?}", screen);
         assert_eq!(false, collision);

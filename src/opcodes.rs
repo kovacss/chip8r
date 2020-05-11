@@ -299,12 +299,12 @@ pub fn find_opcode_id<'a>(opcodes: &'a Vec<OpCodeLookup>, opcode: &u16) -> Optio
     None
 }
 
-pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>) {
+pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>) -> bool {
     let opcode = cpu.get_next_opcode();
     let parse_result = parse_opcode(op_codes, &opcode);
     
     if parse_result.is_none() {
-        return;
+        return false;
     }
 
     let (instruction, variables) = parse_result.unwrap();
@@ -329,25 +329,23 @@ pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>) {
         OpCode::CALL_ADDR => {
             cpu.sp += 1;
             cpu.stack.push_front(cpu.pc);
-            // TODO puts the current PC on the top of the stack
             cpu.pc = variables.addr;
-            println!("STACK {} - SP {}", cpu.stack[0], cpu.sp);
             cpu.pc -= 2;
         },
         OpCode::SE_VX_BYTE => {
-            let reg_value = cpu.registers[usize::from(variables.x)];
+            let reg_value = cpu.get_register_value(variables.x);
             if reg_value == variables.kk {
                 cpu.pc += 2;
             }
         },
         OpCode::SNE_VX_BYTE => {
-            let reg_value = cpu.registers[usize::from(variables.x)];
+            let reg_value = cpu.get_register_value(variables.x);
             if reg_value != variables.kk {
                 cpu.pc += 2;
             }
         },
         OpCode::SE_VX_VY => {
-            let reg_value_x = cpu.registers[usize::from(variables.x)];
+            let reg_value_x = cpu.get_register_value(variables.x);
             let reg_value_y = cpu.registers[usize::from(variables.y)];
             if reg_value_x == reg_value_y {
                 cpu.pc += 2;
@@ -360,63 +358,63 @@ pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>) {
             cpu.registers[usize::from(variables.x)] += variables.kk;
         },
         OpCode::LD_VX_VY => {
-            cpu.registers[usize::from(variables.x)] = cpu.registers[usize::from(variables.y)];
+            cpu.registers[usize::from(variables.x)] = cpu.get_register_value(variables.y);
         },
         OpCode::OR_VX_VY => {
-            cpu.registers[usize::from(variables.x)] = cpu.registers[usize::from(variables.x)] | cpu.registers[usize::from(variables.y)];
+            cpu.registers[usize::from(variables.x)] = cpu.get_register_value(variables.x) | cpu.get_register_value(variables.y);
         },
         OpCode::AND_VX_VY => {
-            cpu.registers[usize::from(variables.x)] = cpu.registers[usize::from(variables.x)] & cpu.registers[usize::from(variables.y)];
+            cpu.registers[usize::from(variables.x)] = cpu.get_register_value(variables.x) & cpu.get_register_value(variables.y);
         },
         OpCode::XOR_VX_VY => {
-            cpu.registers[usize::from(variables.x)] = cpu.registers[usize::from(variables.x)] ^ cpu.registers[usize::from(variables.y)];
+            cpu.registers[usize::from(variables.x)] = cpu.get_register_value(variables.x) ^ cpu.get_register_value(variables.y);
         },
         OpCode::ADD_VX_VY => {
-            let result: u16 = cpu.registers[usize::from(variables.x)] + cpu.registers[usize::from(variables.y)];
+            let result: u16 = cpu.get_register_value(variables.x) + cpu.get_register_value(variables.y);
             if result > 255 {
                 cpu.registers[usize::from(variables.x)] = result >> 8;
-                cpu.registers[15] = 1;
+                cpu.set_regF(1);
             } else {
-                cpu.registers[usize::from(variables.x)] += cpu.registers[usize::from(variables.y)]
+                cpu.registers[usize::from(variables.x)] += cpu.get_register_value(variables.y)
             }
         },
         OpCode::SUB_VX_VY => {
-            let result: u16 = cpu.registers[usize::from(variables.x)] - cpu.registers[usize::from(variables.y)];
+            let result: u16 = cpu.get_register_value(variables.x) - cpu.get_register_value(variables.y);
             if result > 0 {
-                cpu.registers[15] = 1;
+                cpu.set_regF(1);
             } else {
-                cpu.registers[15] = 0;
+                cpu.set_regF(0);
             }
             cpu.registers[usize::from(variables.x)] = result
         },
         OpCode::SHR_VX_VY => {
-            let lsb: u16 = cpu.registers[usize::from(variables.x)] >> 5;
-            cpu.registers[15] = match lsb {
+            let lsb: u16 = cpu.get_register_value(variables.x) >> 5;
+            cpu.set_regF(match lsb {
                 1 => 1,
                 _ => 0
-            };
+            });
             cpu.registers[usize::from(variables.x)] /= 2;
         },
         OpCode::SUBN_VX_VY => {
-            let result: u16 = cpu.registers[usize::from(variables.y)] - cpu.registers[usize::from(variables.x)];
+            let result: u16 = cpu.get_register_value(variables.y) - cpu.get_register_value(variables.x);
             if result > 0 {
-                cpu.registers[15] = 1;
+                cpu.set_regF(1);
             } else {
-                cpu.registers[15] = 0;
+                cpu.set_regF(0);
             }
             cpu.registers[usize::from(variables.x)] = result
         },
         OpCode::SHL_VX_VY => {
-            let lsb: u16 = cpu.registers[usize::from(variables.x)] >> 5;
-            cpu.registers[15] = match lsb {
+            let lsb: u16 = cpu.get_register_value(variables.x) >> 5;
+            cpu.set_regF(match lsb {
                 1 => 1,
                 _ => 0
-            };
+            });
             cpu.registers[usize::from(variables.x)] *= 2;
         },
         OpCode::SNE_VX_VY => {
-            let reg_value_a = cpu.registers[usize::from(variables.x)];
-            let reg_value_b = cpu.registers[usize::from(variables.y)];
+            let reg_value_a = cpu.get_register_value(variables.x);
+            let reg_value_b = cpu.get_register_value(variables.y);
             if reg_value_a != reg_value_b {
                 cpu.pc += 2;
                 cpu.pc -= 2;
@@ -434,14 +432,15 @@ pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>) {
             cpu.registers[usize::from(variables.x)] = (random::<u8>() & 0x00ff) as  u16 & variables.kk;
         },
         OpCode::DRW => {
-            let start_x = cpu.registers[usize::from(variables.x)];
-            let start_y = cpu.registers[usize::from(variables.y)];
-            let collision = graphic::display_graphic(start_x, start_y, variables.nibble.into(), cpu.i, &cpu.memory, &mut cpu.screen);
-            cpu.registers[15] = if collision {
+            let start_x = cpu.get_register_value(variables.x);
+            let start_y = cpu.get_register_value(variables.y);
+            let collision = graphic::update_screen(start_x, start_y, variables.nibble.into(), cpu.i, &cpu.memory, &mut cpu.screen);
+            cpu.set_regF(if collision {
                 1
             } else {
                 0
-            };
+            });
+            return true;
         }
         // TODO Key handling
         OpCode::SKP_VX => {
@@ -475,6 +474,8 @@ pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>) {
             panic!();
          }
     };
+
+    false
 }
 
 #[cfg(test)]
@@ -527,7 +528,7 @@ mod tests {
 
     #[test]
     fn execute_LD_VX_BYTE_test() {
-        let mut cpu = cpu::init_cpu();
+        let mut cpu = cpu::CPU::new();
         let op_codes = initialise_opcodes();
 
         execute_op_code(&mut cpu, &op_codes, &0x6100);
@@ -537,7 +538,7 @@ mod tests {
 
     #[test]
     fn execute_LD_I_ADDR_test() {
-        let mut cpu = cpu::init_cpu();
+        let mut cpu = cpu::CPU::new();
         let op_codes = initialise_opcodes();
 
         execute_op_code(&mut cpu, &op_codes, &0xa2d8);
