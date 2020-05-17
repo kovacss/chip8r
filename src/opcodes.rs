@@ -315,6 +315,7 @@ pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>) -> bool {
     // print!("\t - nibble: {:?}", variables.nibble);
     // print!("\t - x: {:?}", variables.x);
     // println!("\t - y: {:?}", variables.y);
+
     match instruction {
         OpCode::RET => {
            cpu.pc = cpu.stack[0];
@@ -385,7 +386,7 @@ pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>) -> bool {
             } else {
                 cpu.set_regF(0);
             }
-            cpu.registers[usize::from(variables.x)] = result
+            cpu.set_register_value(variables.x, result);
         },
         OpCode::SHR_VX_VY => {
             let lsb: u16 = cpu.get_register_value(variables.x) >> 5;
@@ -402,7 +403,7 @@ pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>) -> bool {
             } else {
                 cpu.set_regF(0);
             }
-            cpu.registers[usize::from(variables.x)] = result
+            cpu.set_register_value(variables.x, result);
         },
         OpCode::SHL_VX_VY => {
             let lsb: u16 = cpu.get_register_value(variables.x) >> 5;
@@ -474,7 +475,6 @@ pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<OpCodeLookup>) -> bool {
             panic!();
          }
     };
-
     false
 }
 

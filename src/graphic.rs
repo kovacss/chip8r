@@ -1,4 +1,5 @@
-use crate::cpu::CPU;
+use std::io::Stdout;
+use std::io::Write;
 
 pub const WIDTH: u16 = 64;
 pub const HEIGHT: u16 = 32;
@@ -26,16 +27,67 @@ pub fn get_sprites() -> &'static [u8]  {
     SPRITES
 }
 
+
+use std::io::stdout;
+use crossterm::{
+    ExecutableCommand, QueueableCommand,
+    terminal, cursor, style::{self, Colorize}
+};
+
+pub struct Display {
+    stdout: Stdout
+}
+
+impl Display {
+    pub fn new() -> Self {
+        Display {
+            stdout: stdout()
+        }
+    }
+
+    pub fn clear_screen(&mut self) {
+        self.stdout.execute(terminal::Clear(terminal::ClearType::All)).unwrap();
+    }
+
+    pub fn draw_pixel(&mut self, x: u16, y: u16) {
+        self.stdout
+        .queue(cursor::MoveTo(x,y)).unwrap()
+        .queue(style::PrintStyledContent( "█".white())).unwrap();
+        self.stdout
+        .queue(cursor::MoveTo(x+1,y)).unwrap()
+        .queue(style::PrintStyledContent( "█".white())).unwrap();
+    }
+
+    pub fn apply(&mut self) {
+        self.stdout.flush().unwrap();
+    }
+}
+  
+pub fn draw_screen(display: &mut Display, screen: &Vec<bool>) {
+    // stdout.execute(terminal::Clear(terminal::ClearType::All)).unwrap();
+    for y in 0..HEIGHT {
+      for x in 0..WIDTH {
+        let pixel = screen[usize::from(x + y * WIDTH)];
+        if pixel == true {
+          // in this loop we are more efficient by not flushing the buffer.
+          display.draw_pixel(x, y);
+        }
+      }
+    }
+
+    display.apply();
+}
+
 pub fn update_screen(start_x: u16, start_y: u16, bytes_to_read: u16, base_address: u16, memory: &Vec<u8>, screen: &mut Vec<bool>) -> bool{
     let mut collision = false;
 
-    println!("setting pixel x {} - y {} - bytes_to_read: {} - base_address: {}", start_x, start_y, bytes_to_read, base_address);
+    // println!("setting pixel x {} - y {} - bytes_to_read: {} - base_address: {}", start_x, start_y, bytes_to_read, base_address);
     for idx in 0..bytes_to_read {
         let sprite = memory[usize::from(base_address + idx)];
-        let y = start_y + idx;
+        let y = (start_y + idx) % HEIGHT;
 
         for sprite_idx in 0..8 {
-            let x = start_x + sprite_idx;
+            let x = (start_x + sprite_idx) % WIDTH;
             let pixel_coordinate = x + (y * WIDTH);
 
             let bit = sprite >> (7 - sprite_idx) & 1;

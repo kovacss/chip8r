@@ -1,55 +1,46 @@
 use std::fs;
-
-fn load_game(rom_path: &str) -> Vec<u8> {
-
-    let rom_content = fs::read(rom_path);
-    println!("Loading rom - {}", rom_path);
-    
-    match rom_content {
-        Ok(game) => game,
-        Err(msg) => {
-            println!("Could not load rom {}", msg);
-            panic!();
-        }
-    }
-}
+use std::{thread, time};
 
 pub mod cpu;
 pub mod opcodes;
 pub mod graphic;
 
+fn load_game(rom_path: &str) -> Vec<u8> {
+
+  let rom_content = fs::read(rom_path);
+  println!("Loading rom - {}", rom_path);
+  
+  match rom_content {
+      Ok(game) => game,
+      Err(msg) => {
+          println!("Could not load rom {}", msg);
+          panic!();
+      }
+  }
+}
+
+
 fn main() {
-    let mut cpu = cpu::CPU::new();
-    cpu.memory = graphic::get_sprites().to_vec();
-    cpu.memory.resize(0x200, 0);
-
-    println!("Len after loading sprites {}", cpu.memory.len());
-
-    cpu.memory.append(&mut load_game("blitz.rom"));
+    let refresh_rate = time::Duration::from_millis(16);
     let opcodes = opcodes::initialise_opcodes();
 
-    println!("Len after loading game {}", cpu.memory.len());
+    let mut cpu = cpu::CPU::new();
+    let mut display = graphic::Display::new();
 
-    while true {
-        // let opcode = get_opcode(&cpu.memory, usize::from(cpu.pc));
+    println!("Loading game ..");
+    cpu.memory.append(&mut load_game("maze.rom"));
+
+    display.clear_screen();
+
+    loop {
         let update_screen = opcodes::execute_op_code(&mut cpu, &opcodes);
 
         cpu.pc += 2;
         
         if update_screen {
-            println!("----------------------------------------------------------------");
-            for y in 0..graphic::HEIGHT {
-                for x in 0..graphic::WIDTH {
-                    let pixel = cpu.screen[usize::from(x + y * graphic::WIDTH)];
-                    if pixel == true {
-                        print!("X");
-                    } else {
-                        print!(" ");
-                    }
-                }
-                println!();
-            }
-            println!("----------------------------------------------------------------");
+            graphic::draw_screen(&mut display, &cpu.screen);
         }
+
+        thread::sleep(refresh_rate);
     }
 }
