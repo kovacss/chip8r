@@ -11,4 +11,5 @@ Dependencies
 Resources
 --
 [Technical reference](http://devernay.free.fr/hacks/chip8/C8TECH10.HTM)
+[Roms](https://github.com/dmatlack/chip8/tree/master/roms)
 [mir3z/chip8-emu](https://github.com/mir3z/chip8-emu) Helped me a lot debugging - especially instructions quircks
