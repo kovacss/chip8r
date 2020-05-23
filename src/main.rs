@@ -1,31 +1,77 @@
+use crossterm::terminal::enable_raw_mode;
+use crossterm::event::poll;
 use std::fs;
+use std::time::Duration;
 use std::{thread, time};
-
-fn load_game(romPath: &str) -> Vec<u8> {
-
-    println!("{}", fs::read(romPath).unwrap().len());
-
-    fs::read(romPath).unwrap()
-}
-
-fn get_opcode(memory: &Vec<u8>, idx: usize) -> u16 {
-    let opCode =  ((memory[idx] as u16) << 8) | memory[idx + 1] as u16;
-    opCode
-}
 
 pub mod cpu;
 pub mod opcodes;
 pub mod graphic;
 
+fn load_game(rom_path: &str) -> Vec<u8> {
+
+  let rom_content = fs::read(rom_path);
+  println!("Loading rom - {}", rom_path);
+  
+  match rom_content {
+      Ok(game) => game,
+      Err(msg) => {
+          println!("Could not load rom {}", msg);
+          panic!();
+      }
+  }
+}
+
+
+
 fn main() {
-    let mut cpu = cpu::init_cpu();
-    cpu.memory = load_game("maze.rom");
+    enable_raw_mode().unwrap();
+
+    let refresh_rate = time::Duration::from_millis(16);
     let opcodes = opcodes::initialise_opcodes();
 
-    while true {
-        let opcode = get_opcode(&cpu.memory, usize::from(cpu.pc));
-        opcodes::execute_op_code(&mut cpu, &opcodes, &opcode);
+    let mut cpu = cpu::CPU::new();
+    let mut display = graphic::Display::new();
+
+    println!("Loading game ..");
+    cpu.memory.append(&mut load_game("keypadtest.rom"));
+    let remaining_size = 0xFFF - cpu.memory.len();
+    cpu.memory.append(&mut vec![0; usize::from(remaining_size)]);
+
+    // display.clear_screen();
+
+    loop {
+        
+        // for idx in 0..16 {
+        //   print!("{}, ", cpu.registers[idx]);
+        // }
+        // print!(" -- [i] {}", cpu.i);
+        // println!();
+
+        let update_screen = opcodes::execute_op_code(&mut cpu, &opcodes);
+
+        cpu.update_timers();
+
         cpu.pc += 2;
-        thread::sleep(time::Duration::from_millis(500));
+        
+        if update_screen {
+            graphic::draw_screen(&mut display, &cpu.screen);
+            
+            // println!("----------------------------------------------------------------");
+            // for y in 0..graphic::HEIGHT {
+            //     for x in 0..graphic::WIDTH {
+            //         let pixel = cpu.screen[usize::from(x + y * graphic::WIDTH)];
+            //         if pixel == true {
+            //             print!("X");
+            //         } else {
+            //             print!(" ");
+            //         }
+            //     }
+            //     println!();
+            // }
+            // println!("----------------------------------------------------------------");
+        }
+
+        thread::sleep(refresh_rate);
     }
 }
