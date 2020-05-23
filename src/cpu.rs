@@ -1,5 +1,7 @@
 use std::collections::VecDeque;
 
+const SCREEN_SIZE: usize = 64 * 32;
+
 pub struct CPU {
     // heap
     pub memory: Vec<u8>,
@@ -37,7 +39,7 @@ impl CPU {
             sp: 0,
             registers: vec![0; 16],
             i: 0,
-            screen: vec![false; 64*32],
+            screen: vec![false; SCREEN_SIZE],
             key_pressed: None,
             dt: 0,
             st: 0
@@ -50,7 +52,7 @@ impl CPU {
     }
 
     pub fn clear_screen(&mut self) {
-        self.screen = vec![false; 64*32];
+        self.screen = vec![false; SCREEN_SIZE];
     }
 
     pub fn get_next_opcode(&self) -> u16 {
@@ -60,7 +62,6 @@ impl CPU {
     }
 
     pub fn update_memory(&mut self, idx: u16, value: u8) {
-        // print!("updating memory[{}]={} -- ", idx, value);
         self.memory[usize::from(idx)] = value;
     }
 
@@ -72,7 +73,7 @@ impl CPU {
         self.registers[usize::from(reg_number)] = value;
     }
 
-    pub fn set_regF(&mut self, value: u8) {
+    pub fn set_reg_f(&mut self, value: u8) {
         self.set_register_value(0xF, value);
     }
 
@@ -84,5 +85,13 @@ impl CPU {
         if self.st > 0 {
             self.st -= 1;
         }
+    }
+
+    pub fn dump_registers(&self) {
+        for idx in 0..16 {
+          print!("{}, ", self.registers[idx]);
+        }
+        print!(" -- [i] {}", self.i);
+        println!();
     }
 }

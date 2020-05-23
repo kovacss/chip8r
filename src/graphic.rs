@@ -76,33 +76,26 @@ impl Display {
         self.stdout.flush().unwrap();
     }
 }
-  
+ 
 pub fn draw_screen(display: &mut Display, screen: &Vec<bool>) {
     display.clear_screen();
 
-    // stdout.execute(terminal::Clear(terminal::ClearType::All)).unwrap();
+    // Draw the actual screen
     for y in 0..HEIGHT {
       for x in 0..WIDTH {
         let pixel = screen[usize::from(x + y * WIDTH)];
-        // print!("x {} - y {} pixel {} -- ", x, y, pixel);
-        // if pixel == true {
         display.draw_pixel((x * 2).into(), y.into(), pixel);
-        // }
       }
-    //   println!("line done");
     }
 
+    // Draw borders
     for y in 0..HEIGHT {
         for x in 0..WIDTH {
           if (y == 0 || y == HEIGHT - 1) || (x == 0 || x == (WIDTH * 2) - 1) {
-            // in this loop we are more efficient by not flushing the buffer.
             display.draw_pixel((x * 2).into(), y.into(), true);
-            // stdout
-            //   .queue(cursor::MoveTo(x,y))?
-            //   .queue(style::PrintStyledContent( "█".magenta()))?;
           }
         }
-      }
+    }
 
     display.apply();
 }
@@ -110,13 +103,10 @@ pub fn draw_screen(display: &mut Display, screen: &Vec<bool>) {
 pub fn update_screen(start_x: u16, start_y: u16, bytes_to_read: u16, base_address: u16, memory: &Vec<u8>, screen: &mut Vec<bool>) -> bool{
     let mut collision = false;
 
-    // if (start_y == 4) {
-        // println!("update_screen: {} {} - {}", start_x, start_y, bytes_to_read);
-    // }
     // println!("setting pixel x {} - y {} - bytes_to_read: {} - base_address: {}", start_x, start_y, bytes_to_read, base_address);
     for idx in 0..bytes_to_read {
         let sprite = memory[usize::from(base_address + idx)];
-        let y = (start_y + idx);
+        let y = start_y + idx;
 
         // println!("sprite[{}][{}] - base_address {:b} {}", idx, base_address + idx, sprite, base_address);
         for sprite_idx in 0..8 {
@@ -124,12 +114,9 @@ pub fn update_screen(start_x: u16, start_y: u16, bytes_to_read: u16, base_addres
             let pixel_coordinate = x + (y * WIDTH);
 
             // println!("#bytes {} - {} - {}", idx, x, y);
-
             let bit = (sprite >> (7 - sprite_idx) & 0x01) == 1;
             let existing_pixel = screen[usize::from(pixel_coordinate)];
-            // if (bit == true) != existing_pixel {
             if bit == true {
-                // println!("\t update_screen: {} {} - {} - sprite {} {}", x, y, pixel_coordinate, usize::from(base_address + idx), !existing_pixel);
                 screen[usize::from(pixel_coordinate)] = !existing_pixel;
                 if existing_pixel == true {
                     collision = true;
