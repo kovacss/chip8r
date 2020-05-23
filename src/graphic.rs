@@ -110,7 +110,7 @@ pub fn update_screen(start_x: u16, start_y: u16, bytes_to_read: u16, base_addres
 
         // println!("sprite[{}][{}] - base_address {:b} {}", idx, base_address + idx, sprite, base_address);
         for sprite_idx in 0..8 {
-            let x = start_x + sprite_idx;
+            let x = (start_x + sprite_idx);
             let pixel_coordinate = x + (y * WIDTH);
 
             // println!("#bytes {} - {} - {}", idx, x, y);

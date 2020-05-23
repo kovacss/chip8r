@@ -1,5 +1,6 @@
 use crossterm::terminal::enable_raw_mode;
 use std::fs;
+use std::time::Duration;
 use std::{thread, time};
 
 pub mod cpu;
@@ -41,7 +42,7 @@ fn main() {
             return
         }
 
-       cpu.dump_registers();
+       // cpu.dump_registers();
 
         let update_screen = opcodes::execute_op_code(&mut cpu, &opcodes);
 

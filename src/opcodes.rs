@@ -1,3 +1,4 @@
+use crossterm::event::poll;
 use crate::cpu::CPU;
 use crate::instructions;
 use crate::instructions::{Instruction};
@@ -374,11 +375,7 @@ pub fn execute_op_code(cpu: &mut CPU, op_codes: &Vec<InstructionLookup>) -> bool
         },
         Instruction::LD_VX_DT => {
             instructions::load_vx_dt(cpu, variables.x);
-        },
-        _ => {
-            println!("Instruction {:?} no implemented", instruction);
-            panic!();
-         }
+        }
     };
     false
 }

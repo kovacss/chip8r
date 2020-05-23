@@ -131,7 +131,7 @@ pub fn add_vx_vy(cpu: &mut CPU, x: u8, y: u8) {
 pub fn sub_vx_vy(cpu: &mut CPU, x: u8, y: u8) {
     let reg_value_x =  cpu.get_reg(x);
     let reg_value_y = cpu.get_reg(y);
-    let (result, overflow) = reg_value_y.overflowing_sub(reg_value_x);
+    let (result, _overflow) = reg_value_y.overflowing_sub(reg_value_x);
     if reg_value_x >= reg_value_y {
         cpu.set_reg_f(1);
     } else {
@@ -154,7 +154,7 @@ pub fn shr_vx_vy(cpu: &mut CPU, x: u8, y: u8) {
 }
 
 pub fn subn_vx_vy(cpu: &mut CPU, x: u8, y: u8) {
-    let (result, overflow) = cpu.get_reg(y).overflowing_sub(cpu.get_reg(x));
+    let (result, _overflow) = cpu.get_reg(y).overflowing_sub(cpu.get_reg(x));
     if cpu.get_reg(x) >= cpu.get_reg(y) {
         cpu.set_reg_f(0);
     } else {
